@@ -61,9 +61,8 @@ int intinput(char *text)
 }
 
 // Criar tarefa
-int createtask(struct tarefa *tasklist, char *str)
+int createtask(struct tarefa *tasklist, char *str, int maxtask)
 {
-    int maxtask = gettasklistsize(tasklist);
     if (maxtask == 99)
     {
         printf("Limite de tarefas atingido.\n");
@@ -71,7 +70,7 @@ int createtask(struct tarefa *tasklist, char *str)
     else
     {
         // Categoria, Descrição e Prioridade
-        
+
         // Whiles para prender o usuário caso ele
         // escreva errado ou dê erro no input
         while (1)
@@ -110,12 +109,12 @@ int createtask(struct tarefa *tasklist, char *str)
 }
 
 // Vizualizar tarefas
-int viewtask(struct tarefa *tasklist, char *str, int *specific)
+int viewtask(struct tarefa *tasklist, char *str, int *specific, int *maxtask)
 {
+    int i;
     // Se a função for chamada pelo usuário
-    if (specific == NULL)
+    if (specific == 0)
     {
-        int maxtask = gettasklistsize(tasklist);
         int c;
         while (1)
         {
@@ -127,7 +126,6 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific)
             }
             printf("\n");
         }
-        int i;
         if (c == 0)
         {
             for (i = 0; i < maxtask; i++)
@@ -149,17 +147,29 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific)
     // Se a função for chamada pelo código (acha direto)
     else
     {
-        printf("Tarefa %d:\n", *specific + 1);
-        printf("Prioridade: %d\n", tasklist[*specific].prio);
-        printf("Categoria: %s\n", tasklist[*specific].cat);
-        printf("Descrição: %s\n\n", tasklist[*specific].desc);
+        if (specific == -1)
+        {
+            for (i = 0; i < maxtask; i++)
+            {
+                printf("Tarefa %d:\n", i + 1);
+                printf("Prioridade: %d\n", (tasklist + i)->prio);
+                printf("Categoria: %s\n", (tasklist + i)->cat);
+                printf("Descrição: %s\n\n", (tasklist + i)->desc);
+            }
+        }
+        else
+        {
+            printf("Tarefa %d:\n", *specific + 1);
+            printf("Prioridade: %d\n", tasklist[*specific].prio);
+            printf("Categoria: %s\n", tasklist[*specific].cat);
+            printf("Descrição: %s\n\n", tasklist[*specific].desc);
+        }
     }
 }
 
 // Editar tarefas
-int edittask(struct tarefa *tasklist, char *str)
+int edittask(struct tarefa *tasklist, char *str, int *maxtask)
 {
-    int maxtask = gettasklistsize(tasklist);
     int c;
     while (1)
     {
@@ -172,7 +182,7 @@ int edittask(struct tarefa *tasklist, char *str)
         printf("\n");
     }
     int i = c - 1;
-    viewtask(tasklist, str, &i);
+    viewtask(tasklist, str, &i, maxtask);
     c = 0;
     while (1)
     {
@@ -227,8 +237,33 @@ int edittask(struct tarefa *tasklist, char *str)
     }
 }
 
+// Deletar tarefas
+int deletetask(struct tarefa *tasklist, char *str, int *maxtask)
+{
+    int c;
+    while (1)
+    {
+        viewtask(tasklist, str, -1, maxtask);
+        printf("Qual tarefa você gostaria de deletar? (digite um número)\n");
+        c = intinput("-> ");
+        if (!(c < 0) && !(c > maxtask))
+        {
+            break;
+        }
+        printf("\n");
+    }
+    c--;
+    for (; c < maxtask; c++)
+    {
+        (tasklist + c)->prio = (tasklist + c + 1)->prio;
+        strcpy((tasklist + c)->cat, (tasklist + c + 1)->cat);
+        strcpy((tasklist + c)->desc, (tasklist + c + 1)->desc);
+    }
+    return 0;
+}
+
 // Salvar/Criar arquivo bin
-int savedata(char *filename, struct tarefa *tasklist)
+int savedata(char *filename, struct tarefa *all, int *qntd)
 {
     FILE *f = fopen(filename, "wb");
     if (f == NULL)
@@ -238,7 +273,13 @@ int savedata(char *filename, struct tarefa *tasklist)
     }
     // Escrever o array tasklist no arquivo (inclusive os NULLs)
     // O arquivo deu em torno de 40Kb então achei ok colocar tudo de uma vez
-    if (fwrite(tasklist, sizeof(struct tarefa), 100, f) != 100)
+    if (fwrite(all, sizeof(struct tarefa), 100, f) != 100)
+    {
+        printf("Erro ao escrever no arquivo.\n");
+        fclose(f);
+        return 1;
+    }
+    if (fwrite(qntd, sizeof(int), 1, f) != 1)
     {
         printf("Erro ao escrever no arquivo.\n");
         fclose(f);
@@ -249,16 +290,22 @@ int savedata(char *filename, struct tarefa *tasklist)
 }
 
 // Carregar arquivo bin
-int loaddata(char *filename, struct tarefa *tasklist)
+int loaddata(char *filename, struct tarefa *all, int *qntd)
 {
-    FILE *f = fopen(filename,"rb");
+    FILE *f = fopen(filename, "rb");
     if (f == NULL)
     {
         printf("Erro ao abrir o arquivo para leitura.\n");
         return 1;
     }
     // Lê os dados do arquivo direto para o array tasklist
-    if(fread(tasklist, sizeof(struct tarefa), 100, f) != 100)
+    if (fread(all, sizeof(struct tarefa), 100, f) != 100)
+    {
+        printf("Erro ao ler o arquivo.\n");
+        fclose(f);
+        return 1;
+    }
+    if (fread(qntd, sizeof(int), 1, f) != 1)
     {
         printf("Erro ao ler o arquivo.\n");
         fclose(f);

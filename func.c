@@ -13,7 +13,7 @@ int init(struct tarefa *tasklist)
     {
         (tasklist + i)->prio = -1;
     }
-    
+
     return 0;
 }
 
@@ -48,7 +48,6 @@ int gettasklistsize(struct tarefa *tasklist)
     int i;
     for (i = 0; i < MAXTAREFAS; i++)
     {
-        printf("%d\n",(tasklist + i)->prio);
         if ((tasklist + i)->prio == -1)
         {
             return i;
@@ -130,64 +129,47 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int maxtask)
     // Se a função for chamada pelo usuário
     if (!specific)
     {
+        struct tarefa *tarefas_filtro = malloc(100 * sizeof(struct tarefa));
         int c;
         while (1)
-        {
-            printf("Qual tarefa você gostaria de ver? (0 para todas, %d para a última)\n", maxtask);
-            c = intinput("-> ");
-            if (!(c < 0) && !(c > maxtask))
             {
-                break;
-            }
-            printf("\n");
-        }
-        if (!c)
-        {
-            for (i = 0; i < maxtask; i++)
-            {
-                printf("Tarefa %d:\n", i + 1);
-                printf("Prioridade: %d\n", (tasklist + i)->prio);
-                printf("Estado: ");
-                switch ((tasklist + i)->state)
+                c = intinput("Gostaria de filtrar as tarefas?\n1 - não\n2 - por prioridade\n3 - por estado\n4 - por categoria\n5 - por prioridade e categoria\n-> ");
+                if (c >=0 && c <=5)
                 {
-                case nao_iniciado:
-                    printf("não iniciada\n");
-                    break;
-                case em_andamento:
-                    printf("em andamento\n");
-                    break;
-                case completa:
-                    printf("completa\n");
-                    break;
-                default:
                     break;
                 }
-                printf("Categoria: %s\n", (tasklist + i)->cat);
-                printf("Descrição: %s\n\n", (tasklist + i)->desc);
+                printf("\n");
             }
-        }
-        else
+        if (c == 1)
         {
-            printf("Tarefa %d:\n", c);
-            printf("Prioridade: %d\n", (tasklist + c - 1)->prio);
-            printf("Estado: ");
-            switch ((tasklist + c - 1)->state)
+            while (1)
             {
-            case nao_iniciado:
-                printf("não iniciada\n");
-                break;
-            case em_andamento:
-                printf("em andamento\n");
-                break;
-            case completa:
-                printf("completa\n");
-                break;
-            default:
-                break;
+                printf("Qual tarefa você gostaria de ver? (0 para todas, %d para a última)\n", maxtask);
+                c = intinput("-> ");
+                if (!(c < 0) && !(c > maxtask))
+                {
+                    break;
+                }
+                printf("\n");
             }
-            printf("Categoria: %s\n", (tasklist + c - 1)->cat);
-            printf("Descrição: %s\n\n", (tasklist + c - 1)->desc);
+            if (!c)
+            {
+                for (i = 0; i < maxtask; i++)
+                {
+                    viewtask(tasklist,str,&i,maxtask);
+                }
+            }
+            else
+            {
+                c -= 1;
+                viewtask(tasklist,str,&c,maxtask);
+            }
         }
+        else if (c == 2)
+        {
+            // filtro aqui
+        }
+        free(tarefas_filtro);
     }
     // Se a função for chamada pelo código (acha direto)
     else

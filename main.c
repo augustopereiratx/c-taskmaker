@@ -4,12 +4,13 @@
 
 int main()
 {
-    init();
     struct tarefa tasklist[MAXTAREFAS];
     int qntd = 0;
+    init(tasklist);
     loaddata("tasks.bin", tasklist, &qntd);
     char str[SIZE];
     int choice = 0;
+    qntd = gettasklistsize(tasklist);
     while (1)
     {
         if (choice == 5)

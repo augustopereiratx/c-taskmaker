@@ -6,9 +6,14 @@
 
 // Função para incicializar acentos em português, não funciona no Windows,
 // mas no meu Linux em casa deu certo
-int init()
+int init(struct tarefa *tasklist)
 {
     setlocale(LC_ALL, "Portuguese");
+    for (int i = 0; i < MAXTAREFAS; i++)
+    {
+        (tasklist + i)->prio = -1;
+    }
+    
     return 0;
 }
 
@@ -20,6 +25,14 @@ int input(char *text, char *str, int max_len)
     printf("");
     if (fgets(str, max_len, stdin) != NULL)
     {
+        for (int i = 0; i < max_len; i++)
+        {
+            if (str[i] == '\n')
+            {
+                str[i] == '\0';
+                break;
+            }
+        }
         // Retorna 1 porque eu uso como comparador em ifs
         return 1;
     }
@@ -35,7 +48,8 @@ int gettasklistsize(struct tarefa *tasklist)
     int i;
     for (i = 0; i < MAXTAREFAS; i++)
     {
-        if ((tasklist + i)->prio == NULL)
+        printf("%d\n",(tasklist + i)->prio);
+        if ((tasklist + i)->prio == -1)
         {
             return i;
         }
@@ -63,9 +77,10 @@ int intinput(char *text)
 // Criar tarefa
 int createtask(struct tarefa *tasklist, char *str, int maxtask)
 {
-    if (maxtask == 99)
+    if (maxtask == MAXTAREFAS)
     {
         printf("Limite de tarefas atingido.\n");
+        return 1;
     }
     else
     {
@@ -102,18 +117,18 @@ int createtask(struct tarefa *tasklist, char *str, int maxtask)
             }
             printf("\n");
         }
-        maxtask++;
+        (tasklist + maxtask)->state = nao_iniciado;
         printf("\n");
     }
     return 0;
 }
 
 // Vizualizar tarefas
-int viewtask(struct tarefa *tasklist, char *str, int *specific, int *maxtask)
+int viewtask(struct tarefa *tasklist, char *str, int *specific, int maxtask)
 {
     int i;
     // Se a função for chamada pelo usuário
-    if (specific == 0)
+    if (!specific)
     {
         int c;
         while (1)
@@ -126,12 +141,27 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int *maxtask)
             }
             printf("\n");
         }
-        if (c == 0)
+        if (!c)
         {
             for (i = 0; i < maxtask; i++)
             {
                 printf("Tarefa %d:\n", i + 1);
                 printf("Prioridade: %d\n", (tasklist + i)->prio);
+                printf("Estado: ");
+                switch ((tasklist + i)->state)
+                {
+                case nao_iniciado:
+                    printf("não iniciada\n");
+                    break;
+                case em_andamento:
+                    printf("em andamento\n");
+                    break;
+                case completa:
+                    printf("completa\n");
+                    break;
+                default:
+                    break;
+                }
                 printf("Categoria: %s\n", (tasklist + i)->cat);
                 printf("Descrição: %s\n\n", (tasklist + i)->desc);
             }
@@ -140,6 +170,21 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int *maxtask)
         {
             printf("Tarefa %d:\n", c);
             printf("Prioridade: %d\n", (tasklist + c - 1)->prio);
+            printf("Estado: ");
+            switch ((tasklist + c - 1)->state)
+            {
+            case nao_iniciado:
+                printf("não iniciada\n");
+                break;
+            case em_andamento:
+                printf("em andamento\n");
+                break;
+            case completa:
+                printf("completa\n");
+                break;
+            default:
+                break;
+            }
             printf("Categoria: %s\n", (tasklist + c - 1)->cat);
             printf("Descrição: %s\n\n", (tasklist + c - 1)->desc);
         }
@@ -147,12 +192,27 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int *maxtask)
     // Se a função for chamada pelo código (acha direto)
     else
     {
-        if (specific == -1)
+        if (*specific == -1)
         {
             for (i = 0; i < maxtask; i++)
             {
                 printf("Tarefa %d:\n", i + 1);
                 printf("Prioridade: %d\n", (tasklist + i)->prio);
+                printf("Estado: ");
+                switch ((tasklist + i)->state)
+                {
+                case nao_iniciado:
+                    printf("não iniciada\n");
+                    break;
+                case em_andamento:
+                    printf("em andamento\n");
+                    break;
+                case completa:
+                    printf("completa\n");
+                    break;
+                default:
+                    break;
+                }
                 printf("Categoria: %s\n", (tasklist + i)->cat);
                 printf("Descrição: %s\n\n", (tasklist + i)->desc);
             }
@@ -161,6 +221,21 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int *maxtask)
         {
             printf("Tarefa %d:\n", *specific + 1);
             printf("Prioridade: %d\n", tasklist[*specific].prio);
+            printf("Estado: ");
+            switch (tasklist[*specific].state)
+            {
+            case nao_iniciado:
+                printf("não iniciada\n");
+                break;
+            case em_andamento:
+                printf("em andamento\n");
+                break;
+            case completa:
+                printf("completa\n");
+                break;
+            default:
+                break;
+            }
             printf("Categoria: %s\n", tasklist[*specific].cat);
             printf("Descrição: %s\n\n", tasklist[*specific].desc);
         }
@@ -168,7 +243,7 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int *maxtask)
 }
 
 // Editar tarefas
-int edittask(struct tarefa *tasklist, char *str, int *maxtask)
+int edittask(struct tarefa *tasklist, char *str, int maxtask)
 {
     int c;
     while (1)
@@ -187,9 +262,9 @@ int edittask(struct tarefa *tasklist, char *str, int *maxtask)
     while (1)
     {
         // if c == 4 porque 4 é pra cancelar/sair
-        if (c != 4)
+        if (c != 5)
         {
-            c = intinput("O que deseja editar?\n1 - Prioridade\n2 - Categoria\n3 - Descrição\n4 - Sair\n-> ");
+            c = intinput("O que deseja editar?\n1 - Prioridade\n2 - Estado\n3 - Categoria\n4 - Descrição\n5 - Sair\n-> ");
             switch (c)
             {
             case 1:
@@ -203,8 +278,22 @@ int edittask(struct tarefa *tasklist, char *str, int *maxtask)
                     }
                     printf("\n");
                 }
+                c = 1;
                 break;
             case 2:
+                while (1)
+                {
+                    c = intinput("Escolha o estado da tarefa:\n1 - não iniciada\n2 - em andamento\n3 - completa\n-> ");
+                    if (c > 0 && c < 4)
+                    {
+                        (tasklist + i)->state = c - 1;
+                        break;
+                    }
+                    printf("\n");
+                }
+                c = 2;
+                break;
+            case 3:
                 while (1)
                 {
                     if (input("Digite a categoria da tarefa\n-> ", str, MAXTAREFAS))
@@ -215,7 +304,7 @@ int edittask(struct tarefa *tasklist, char *str, int *maxtask)
                     printf("\n");
                 }
                 break;
-            case 3:
+            case 4:
                 while (1)
                 {
                     if (input("Digite a descrição da tarefa\n-> ", str, SIZE))
@@ -238,12 +327,14 @@ int edittask(struct tarefa *tasklist, char *str, int *maxtask)
 }
 
 // Deletar tarefas
-int deletetask(struct tarefa *tasklist, char *str, int *maxtask)
+int deletetask(struct tarefa *tasklist, char *str, int maxtask)
 {
     int c;
+    int *temp = malloc(sizeof(int));
+    *temp = -1;
     while (1)
     {
-        viewtask(tasklist, str, -1, maxtask);
+        viewtask(tasklist, str, temp, maxtask);
         printf("Qual tarefa você gostaria de deletar? (digite um número)\n");
         c = intinput("-> ");
         if (!(c < 0) && !(c > maxtask))
@@ -252,6 +343,7 @@ int deletetask(struct tarefa *tasklist, char *str, int *maxtask)
         }
         printf("\n");
     }
+    free(temp);
     c--;
     for (; c < maxtask; c++)
     {
@@ -273,7 +365,7 @@ int savedata(char *filename, struct tarefa *all, int *qntd)
     }
     // Escrever o array tasklist no arquivo (inclusive os NULLs)
     // O arquivo deu em torno de 40Kb então achei ok colocar tudo de uma vez
-    if (fwrite(all, sizeof(struct tarefa), 100, f) != 100)
+    if (fwrite(all, sizeof(struct tarefa), MAXTAREFAS, f) != MAXTAREFAS)
     {
         printf("Erro ao escrever no arquivo.\n");
         fclose(f);
@@ -299,7 +391,7 @@ int loaddata(char *filename, struct tarefa *all, int *qntd)
         return 1;
     }
     // Lê os dados do arquivo direto para o array tasklist
-    if (fread(all, sizeof(struct tarefa), 100, f) != 100)
+    if (fread(all, sizeof(struct tarefa), MAXTAREFAS, f) != MAXTAREFAS)
     {
         printf("Erro ao ler o arquivo.\n");
         fclose(f);

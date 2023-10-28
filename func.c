@@ -4,14 +4,14 @@
 #include <locale.h>
 #include "vars.h"
 
-// Função para incicializar acentos em português, não funciona no Windows,
-// mas no meu Linux em casa deu certo
-int init(struct tarefa *tasklist)
+// Função para incicializar acentos em português, não funciona no Windows, mas no meu Linux em casa deu certo
+int init(struct everything *all)
 {
     setlocale(LC_ALL, "Portuguese");
     for (int i = 0; i < MAXTAREFAS; i++)
     {
-        (tasklist + i)->prio = -1;
+        all->tasklist[i].prio = -1;
+        strcpy(all->categorias[i], " ");
     }
 
     return 0;
@@ -45,15 +45,60 @@ int input(char *text, char *str, int max_len)
 // Pegar número de tarefas já preechidas
 int gettasklistsize(struct tarefa *tasklist)
 {
-    int i;
-    for (i = 0; i < MAXTAREFAS; i++)
+    for (int i = 0; i < MAXTAREFAS; i++)
     {
-        if ((tasklist + i)->prio == -1)
+        if (tasklist[i].prio == -1)
         {
             return i;
         }
     }
     return 99;
+}
+
+// pegar tamanho de categorias
+int getCatSizeSize(char categorias[][MAXTAREFAS])
+{
+    for (int i = 0; i < MAXTAREFAS; i++)
+    {
+        if (!strcmp(categorias[i], " "))
+        {
+            return i;
+        }
+    }
+    return 99;
+}
+
+// vê se strings são idênticas
+int strcompare(char *str1, char *str2)
+{
+    int result = strcmp(str1, str2);
+    if (!result)
+    {
+        for (int i = 0; i < strlen(str1); i++)
+        {
+            if (str1[i] != str2[i])
+            {
+                return 0;
+            }
+        }
+    }
+    return (result == 0) ? 1 : 0;
+}
+
+// ver se categoria já existe
+int doesCatExist(char categorias[][MAXTAREFAS], char *categoria)
+{
+    int catsize = getCatSizeSize(categorias);
+    for (int i = 0; i < catsize; i++)
+    {
+        if (strcompare(categoria, categorias[i]))
+        {
+            return 0;
+        }
+    }
+    // caso seja categoria nova
+    strcpy(categorias[catsize], categoria);
+    return 1;
 }
 
 // Entrada de ints
@@ -74,8 +119,9 @@ int intinput(char *text)
 }
 
 // Criar tarefa
-int createtask(struct tarefa *tasklist, char *str, int maxtask)
+int createtask(struct tarefa *tasklist, char *str, char categorias[][MAXTAREFAS])
 {
+    int maxtask = gettasklistsize(tasklist);
     if (maxtask == MAXTAREFAS)
     {
         printf("Limite de tarefas atingido.\n");
@@ -92,6 +138,8 @@ int createtask(struct tarefa *tasklist, char *str, int maxtask)
             if (input("Digite a categoria da tarefa\n-> ", str, MAXTAREFAS))
             {
                 strcpy((tasklist + maxtask)->cat, str);
+                int catsize = getCatSizeSize(categorias);
+                doesCatExist(categorias, tasklist[maxtask].cat);
                 break;
             }
             printf("\n");
@@ -122,26 +170,52 @@ int createtask(struct tarefa *tasklist, char *str, int maxtask)
     return 0;
 }
 
-// Vizualizar tarefas
-int viewtask(struct tarefa *tasklist, char *str, int *specific, int maxtask)
+// necessario pra filtros
+int reverseArray(struct tarefa *tarefas, int length)
 {
+    int start = 0;
+    int end = length - 1;
+    struct tarefa temp;
+
+    while (start < end)
+    {
+        temp = tarefas[start];
+        tarefas[start] = tarefas[end];
+        tarefas[end] = temp;
+
+        start++;
+        end--;
+    }
+    return 0;
+}
+
+// Vizualizar tarefas
+int viewtask(struct tarefa *tasklist, char *str, char categorias[][MAXTAREFAS], int *specific)
+{
+    int maxtask = gettasklistsize(tasklist);
     int i;
     // Se a função for chamada pelo usuário
     if (!specific)
     {
-        struct tarefa *tarefas_filtro = malloc(100 * sizeof(struct tarefa));
+        struct tarefa *tasklist_filtered = malloc(maxtask * sizeof(struct tarefa));
+        int cont = 0;
+        int *has_user_filtered = malloc(sizeof(int));
+        *has_user_filtered = 0;
         int c;
         while (1)
-            {
-                c = intinput("Gostaria de filtrar as tarefas?\n1 - não\n2 - por prioridade\n3 - por estado\n4 - por categoria\n5 - por prioridade e categoria\n-> ");
-                if (c >=0 && c <=5)
-                {
-                    break;
-                }
-                printf("\n");
-            }
-        if (c == 1)
         {
+            // quer filtrar?
+            c = intinput("Gostaria de filtrar as tarefas?\n1 - não\n2 - por prioridade\n3 - por estado\n4 - por categoria\n5 - por prioridade e categoria\n-> ");
+            if (c >= 1 && c <= 5)
+            {
+                break;
+            }
+            printf("\n");
+        }
+        switch (c)
+        {
+        case 1:
+            // sem filtro
             while (1)
             {
                 printf("Qual tarefa você gostaria de ver? (0 para todas, %d para a última)\n", maxtask);
@@ -154,22 +228,94 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int maxtask)
             }
             if (!c)
             {
-                for (i = 0; i < maxtask; i++)
+                for (int i = 0; i < maxtask; i++)
                 {
-                    viewtask(tasklist,str,&i,maxtask);
+                    viewtask(tasklist, str, categorias, &i);
                 }
             }
             else
             {
                 c -= 1;
-                viewtask(tasklist,str,&c,maxtask);
+                viewtask(tasklist, str, categorias, &c);
+                c++;
+            }
+            break;
+        case 2:
+            *has_user_filtered = 1;
+            // por prioridade
+            for (int i = 0; i < 11; i++)
+            {
+                for (int j = 0; j < maxtask; j++)
+                {
+                    if (tasklist[j].prio == i)
+                    {
+                        tasklist_filtered[cont++] = tasklist[j];
+                    }
+                }
+            }
+
+            break;
+        case 3:
+            *has_user_filtered = 1;
+            // filtrar por estado
+            for (int i = nao_iniciado; i < completa + 1; i++)
+            {
+                for (int j = 0; j < maxtask; j++)
+                {
+                    if (tasklist[j].state == i)
+                    {
+                        tasklist_filtered[cont++] = tasklist[j];
+                    }
+                }
+            }
+            break;
+        case 4:
+            *has_user_filtered = 1;
+            // filtrar por categoria
+            for (int i = 0; i < getCatSizeSize(categorias); i++)
+            {
+                for (int j = 0; j < maxtask; j++)
+                {
+                    if (strcompare(tasklist[j].cat, categorias[i]))
+                    {
+                        tasklist_filtered[cont++] = tasklist[j];
+                    }
+                }
+            }
+            break;
+        case 5:
+            *has_user_filtered = 1;
+            // filtrar por prioridade e categoria
+
+            for (int i = 0; i < getCatSizeSize(categorias); i++)
+            {
+                for (int j = 0; j < 11; j++)
+                {
+                    for (int k = 0; k < maxtask; k++)
+                    {
+                        if (tasklist[k].prio == j && strcmp(tasklist[k].cat, categorias[i]) == 0)
+                        {
+                            tasklist_filtered[cont++] = tasklist[k];
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            printf("\n");
+            break;
+        }
+        // se o usuario escolheu filtrar, mostrar
+        if (*has_user_filtered)
+        {
+            reverseArray(tasklist_filtered, maxtask);
+            for (int i = 0; i < maxtask; i++)
+            {
+                viewtask(tasklist_filtered, str, categorias, &i);
             }
         }
-        else if (c == 2)
-        {
-            // filtro aqui
-        }
-        free(tarefas_filtro);
+        free(has_user_filtered);
+        free(tasklist_filtered);
     }
     // Se a função for chamada pelo código (acha direto)
     else
@@ -179,9 +325,9 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int maxtask)
             for (i = 0; i < maxtask; i++)
             {
                 printf("Tarefa %d:\n", i + 1);
-                printf("Prioridade: %d\n", (tasklist + i)->prio);
+                printf("Prioridade: %d\n", tasklist[i].prio);
                 printf("Estado: ");
-                switch ((tasklist + i)->state)
+                switch (tasklist[i].state)
                 {
                 case nao_iniciado:
                     printf("não iniciada\n");
@@ -195,8 +341,8 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int maxtask)
                 default:
                     break;
                 }
-                printf("Categoria: %s\n", (tasklist + i)->cat);
-                printf("Descrição: %s\n\n", (tasklist + i)->desc);
+                printf("Categoria: %s\n", tasklist[i].cat);
+                printf("Descrição: %s\n\n", tasklist[i].desc);
             }
         }
         else
@@ -225,8 +371,9 @@ int viewtask(struct tarefa *tasklist, char *str, int *specific, int maxtask)
 }
 
 // Editar tarefas
-int edittask(struct tarefa *tasklist, char *str, int maxtask)
+int edittask(struct tarefa *tasklist, char *str, char categorias[][MAXTAREFAS])
 {
+    int maxtask = gettasklistsize(tasklist);
     int c;
     while (1)
     {
@@ -239,7 +386,7 @@ int edittask(struct tarefa *tasklist, char *str, int maxtask)
         printf("\n");
     }
     int i = c - 1;
-    viewtask(tasklist, str, &i, maxtask);
+    viewtask(tasklist, str, categorias, &i);
     c = 0;
     while (1)
     {
@@ -255,7 +402,7 @@ int edittask(struct tarefa *tasklist, char *str, int maxtask)
                     c = intinput("Digite a prioridade da tarefa (0 a 10)\n-> ");
                     if (c >= 0 && c <= 10)
                     {
-                        (tasklist + i)->prio = c;
+                        tasklist[i].prio = c;
                         break;
                     }
                     printf("\n");
@@ -268,7 +415,7 @@ int edittask(struct tarefa *tasklist, char *str, int maxtask)
                     c = intinput("Escolha o estado da tarefa:\n1 - não iniciada\n2 - em andamento\n3 - completa\n-> ");
                     if (c > 0 && c < 4)
                     {
-                        (tasklist + i)->state = c - 1;
+                        tasklist[i].state = c - 1;
                         break;
                     }
                     printf("\n");
@@ -280,7 +427,9 @@ int edittask(struct tarefa *tasklist, char *str, int maxtask)
                 {
                     if (input("Digite a categoria da tarefa\n-> ", str, MAXTAREFAS))
                     {
-                        strcpy((tasklist + i)->cat, str);
+                        strcpy(tasklist[i].cat, str);
+                        int catsize = getCatSizeSize(categorias);
+                        doesCatExist(categorias, tasklist[i].cat);
                         break;
                     }
                     printf("\n");
@@ -291,7 +440,7 @@ int edittask(struct tarefa *tasklist, char *str, int maxtask)
                 {
                     if (input("Digite a descrição da tarefa\n-> ", str, SIZE))
                     {
-                        strcpy((tasklist + i)->desc, str);
+                        strcpy(tasklist[i].desc, str);
                         break;
                     }
                     printf("\n");
@@ -309,14 +458,15 @@ int edittask(struct tarefa *tasklist, char *str, int maxtask)
 }
 
 // Deletar tarefas
-int deletetask(struct tarefa *tasklist, char *str, int maxtask)
+int deletetask(struct tarefa *tasklist, char *str, char categorias[][MAXTAREFAS])
 {
+    int maxtask = gettasklistsize(tasklist);
     int c;
     int *temp = malloc(sizeof(int));
     *temp = -1;
     while (1)
     {
-        viewtask(tasklist, str, temp, maxtask);
+        viewtask(tasklist, str, categorias, temp);
         printf("Qual tarefa você gostaria de deletar? (digite um número)\n");
         c = intinput("-> ");
         if (!(c < 0) && !(c > maxtask))
@@ -337,7 +487,7 @@ int deletetask(struct tarefa *tasklist, char *str, int maxtask)
 }
 
 // Salvar/Criar arquivo bin
-int savedata(char *filename, struct tarefa *all, int *qntd)
+int savedata(char *filename, struct everything *all)
 {
     FILE *f = fopen(filename, "wb");
     if (f == NULL)
@@ -345,15 +495,7 @@ int savedata(char *filename, struct tarefa *all, int *qntd)
         printf("Erro ao abrir o arquivo para escrita.\n");
         return 1;
     }
-    // Escrever o array tasklist no arquivo (inclusive os NULLs)
-    // O arquivo deu em torno de 40Kb então achei ok colocar tudo de uma vez
-    if (fwrite(all, sizeof(struct tarefa), MAXTAREFAS, f) != MAXTAREFAS)
-    {
-        printf("Erro ao escrever no arquivo.\n");
-        fclose(f);
-        return 1;
-    }
-    if (fwrite(qntd, sizeof(int), 1, f) != 1)
+    if (!fwrite(all, sizeof(struct everything), 1, f))
     {
         printf("Erro ao escrever no arquivo.\n");
         fclose(f);
@@ -364,7 +506,7 @@ int savedata(char *filename, struct tarefa *all, int *qntd)
 }
 
 // Carregar arquivo bin
-int loaddata(char *filename, struct tarefa *all, int *qntd)
+int loaddata(char *filename, struct everything *all)
 {
     FILE *f = fopen(filename, "rb");
     if (f == NULL)
@@ -372,14 +514,7 @@ int loaddata(char *filename, struct tarefa *all, int *qntd)
         printf("Erro ao abrir o arquivo para leitura.\n");
         return 1;
     }
-    // Lê os dados do arquivo direto para o array tasklist
-    if (fread(all, sizeof(struct tarefa), MAXTAREFAS, f) != MAXTAREFAS)
-    {
-        printf("Erro ao ler o arquivo.\n");
-        fclose(f);
-        return 1;
-    }
-    if (fread(qntd, sizeof(int), 1, f) != 1)
+    if (!fread(all, sizeof(struct everything), 1, f))
     {
         printf("Erro ao ler o arquivo.\n");
         fclose(f);

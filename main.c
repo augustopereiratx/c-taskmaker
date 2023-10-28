@@ -1,16 +1,17 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "vars.h"
 #include "func.h"
 
 int main()
 {
-    struct tarefa tasklist[MAXTAREFAS];
-    int qntd = 0;
-    init(tasklist);
-    loaddata("tasks.bin", tasklist, &qntd);
+    struct everything *all = malloc(sizeof(struct everything));
+    all->qntd = 0;
+    init(all);
+    loaddata("tasks.bin", all);
     char str[SIZE];
     int choice = 0;
-    qntd = gettasklistsize(tasklist);
+    all->qntd = gettasklistsize(all->tasklist);
     while (1)
     {
         if (choice == 5)
@@ -21,30 +22,31 @@ int main()
         switch (choice)
         {
         case 1:
-            if (!(createtask(tasklist, str, qntd)))
+            if (!(createtask(all->tasklist, str, all->categorias)))
             {
-                qntd++;
+                all->qntd++;
             }
             break;
         case 2:
-            edittask(tasklist, str, qntd);
+            edittask(all->tasklist, str, all->categorias);
             break;
         case 3:
-            if (!(deletetask(tasklist, str, qntd)))
+            if (!(deletetask(all->tasklist, str, all->categorias)))
             {
-                qntd--;
+                all->qntd--;
             }
             break;
         case 4:
-            viewtask(tasklist, str, 0, qntd);
+            viewtask(all->tasklist, str, all->categorias, 0);
             break;
         case 5:
-            savedata("tasks.bin", tasklist, &qntd);
+            savedata("tasks.bin", all);
             printf("Até logo!\n");
             break;
         default:
             break;
         }
     }
+    free(all);
     return 0;
 }

@@ -1,3 +1,5 @@
+#ifndef VARS_H
+#define VARS_H
 #define SIZE 300
 #define MAXTAREFAS 100
 
@@ -15,3 +17,11 @@ struct tarefa
     char desc[SIZE];
     char cat[MAXTAREFAS];
 };
+
+struct everything 
+{
+    struct tarefa tasklist[MAXTAREFAS];
+    int qntd;
+    char categorias[MAXTAREFAS][MAXTAREFAS];
+};
+#endif

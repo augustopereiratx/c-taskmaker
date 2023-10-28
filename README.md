@@ -27,5 +27,5 @@ GCC no Arch Linux e seus derivados (provavelmente já está instalado na sua dis
 ```
 ## Imagens
 
-![Meu desktop com um terminal rodando o programa e o outro rodando o nvim com código do programa](assets/desktop.png)
+![Meu desktop com um terminal rodando o programa e o outro rodando o nvim com código do programa](assets/desktop2.png)
 

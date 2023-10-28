@@ -12,13 +12,14 @@ int main()
     char str[SIZE];
     int choice = 0;
     all->qntd = gettasklistsize(all->tasklist);
+    printf("Bem vindo(a) ao TaskMaker!\n\n");
     while (1)
     {
         if (choice == 5)
         {
             break;
         }
-        choice = intinput("Bem vindo(a) ao TaskMaker!\n\nSelecione:\n1 - Criar tarefa\n2 - Editar tarefa\n3 - Excluir tarefa\n4 - Ver tarefas\n5 - Sair\n\n-> ");
+        choice = intinput("\nSelecione:\n1 - Criar tarefa\n2 - Editar tarefa\n3 - Excluir tarefa\n4 - Ver tarefas\n5 - Sair\n\n-> ");
         switch (choice)
         {
         case 1:

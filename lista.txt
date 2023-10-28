@@ -1,0 +1,8 @@
+Tarefa 1:
+Prioridade: 2
+Estado: não iniciada
+Categoria: cat1
+
+Descrição: desc2
+
+

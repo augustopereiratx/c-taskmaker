@@ -9,6 +9,7 @@ int doesCatExist(char *[MAXTAREFAS], char *);
 int intinput(char *);
 int createtask(struct tarefa *, char *, char [][MAXTAREFAS]);
 int reverseArray(struct tarefa *, int);
+int exportfilter(struct tarefa *);
 int viewtask(struct tarefa *, char *, char [][MAXTAREFAS], int *);
 int edittask(struct tarefa *, char *, char [][MAXTAREFAS]);
 int deletetask(struct tarefa *, char *, char [][MAXTAREFAS]);

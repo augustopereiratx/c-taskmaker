@@ -400,13 +400,17 @@ int viewtask(struct tarefa *tasklist, char *str, char categorias[][MAXTAREFAS], 
                 printf("%d - %s\n", i + 1, categorias[i]);
             }
             input = intinput("-> ") - 1;
-            for (int j = 0; j < maxtask; j++)
+            for (int j = 0; j < 11; j++)
             {
-                if (strcompare(tasklist[j].cat, categorias[input]))
+                for (int k = 0; k < maxtask; k++)
                 {
-                    tasklist_filtered[cont++] = tasklist[j];
+                    if (tasklist[k].prio == j && strcompare(tasklist[k].cat, categorias[input]))
+                    {
+                        tasklist_filtered[cont++] = tasklist[k];
+                    }
                 }
             }
+            reverseArray(tasklist_filtered,cont);
             for (int i = 0; i < cont; i++)
             {
                 viewtask(tasklist_filtered, str, categorias, &i);
